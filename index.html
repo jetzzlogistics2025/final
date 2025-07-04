@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jetzz Logistics - Expedited Hot Shot Trucking Services</title>
+    <meta name="description" content="Professional hot shot trucking and expedited freight delivery services. Fast, reliable transportation for time-sensitive shipments across the region.">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'jet-blue': '#1e40af',
+                        'jet-red': '#dc2626',
+                        'jet-gray': '#374151',
+                        'jet-light': '#f8fafc',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Maps Places API with Bulletproof Fallback -->
+    <script>
+        // Global variables for tracking
+        let googleMapsLoaded = false;
+        let googleMapsAttempted = false;
+        
+        // Fallback validation system (same as before but as backup)
+        const locationData = {
+            states: ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'],
+            cities: ['new york','los angeles','chicago','houston','phoenix','philadelphia','san antonio','san diego','dallas','san jose','austin','jacksonville','fort worth','columbus','charlotte','san francisco','indianapolis','seattle','denver','washington','boston','el paso','detroit','nashville','portland','memphis','oklahoma city','las vegas','louisville','baltimore','milwaukee','albuquerque','tucson','fresno','sacramento','kansas city','mesa','atlanta','colorado springs','raleigh','omaha','miami','oakland','tulsa','minneapolis','cleveland','wichita','arlington'],
+            patterns: {
+                address: /\d+\s+[\w\s]+(?:street|st|avenue|ave|road|rd|boulevard|blvd|lane|ln|drive|dr|court|ct|place|pl|way|circle|cir)\b/i,
+                zipCode: /\b\d{5}(?:-\d{4})?\b/,
+                cityState: /\b[a-z\s]+,\s*[a-z]{2}\b/i
+            }
+        };
+
+        function fallbackValidation(input) {
+            const value = input.value.toLowerCase().trim();
+            let score = 0;
+
+            if (value.length < 5) {
+                input.style.borderColor = '#d1d5db';
+                input.style.backgroundColor = '#ffffff';
+                input.style.boxShadow = 'none';
+                return;
+            }
+
+            // Check for address pattern
+            if (locationData.patterns.address.test(value)) score += 3;
+            if (locationData.patterns.zipCode.test(value)) score += 2;
+            if (locationData.patterns.cityState.test(value)) score += 2;
+            
+            locationData.states.forEach(state => {
+                if (value.includes(state.toLowerCase())) score += 1;
+            });
+            
+            locationData.cities.forEach(city => {
+                if (value.includes(city)) score += 1;
+            });
+
+            // Apply styling
+            if (score >= 3) {
+                input.style.borderColor = '#10b981';
+                input.style.backgroundColor = '#f0fdf4';
+                input.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+            } else if (score >= 1) {
+                input.style.borderColor = '#f59e0b';
+                input.style.backgroundColor = '#fffbeb';
+                input.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.1)';
+            } else {
+                input.style.borderColor = '#d1d5db';
+                input.style.backgroundColor = '#ffffff';
+                input.style.boxShadow = 'none';
+            }
+        }
+
+        // Google Maps initialization
+        function initGoogleMaps() {
+            try {
+                console.log('Attempting Google Maps initialization...');
+                
+                if (typeof google === 'undefined' || !google.maps || !google.maps.places) {
+                    throw new Error('Google Maps API not available');
+                }
+
+                const pickupInput = document.getElementById('pickup-address');
+                const deliveryInput = document.getElementById('delivery-address');
+
+                if (pickupInput) {
+                    const pickupAutocomplete = new google.maps.places.Autocomplete(pickupInput, {
+                        types: ['address'],
+                        componentRestrictions: { country: ['us', 'ca', 'mx'] },
+                        fields: ['formatted_address', 'address_components', 'place_id']
+                    });
+
+                    pickupAutocomplete.addListener('place_changed', function() {
+                        const place = pickupAutocomplete.getPlace();
+                        if (place && place.formatted_address) {
+                            pickupInput.style.borderColor = '#10b981';
+                            pickupInput.style.backgroundColor = '#f0fdf4';
+                            pickupInput.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                            console.log('Pickup address selected:', place.formatted_address);
+                        }
+                    });
+
+                    // Mark as Google Maps enabled
+                    pickupInput.setAttribute('data-google-maps', 'true');
+                }
+
+                if (deliveryInput) {
+                    const deliveryAutocomplete = new google.maps.places.Autocomplete(deliveryInput, {
+                        types: ['address'],
+                        componentRestrictions: { country: ['us', 'ca', 'mx'] },
+                        fields: ['formatted_address', 'address_components', 'place_id']
+                    });
+
+                    deliveryAutocomplete.addListener('place_changed', function() {
+                        const place = deliveryAutocomplete.getPlace();
+                        if (place && place.formatted_address) {
+                            deliveryInput.style.borderColor = '#10b981';
+                            deliveryInput.style.backgroundColor = '#f0fdf4';
+                            deliveryInput.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                            console.log('Delivery address selected:', place.formatted_address);
+                        }
+                    });
+
+                    // Mark as Google Maps enabled
+                    deliveryInput.setAttribute('data-google-maps', 'true');
+                }
+
+                googleMapsLoaded = true;
+                console.log('✅ Google Maps Places API successfully initialized!');
+                
+            } catch (error) {
+                console.log('❌ Google Maps failed to initialize:', error.message);
+                console.log('🔄 Falling back to custom validation system...');
+                activateFallbackValidation();
+            }
+        }
+
+        // Activate fallback validation system
+        function activateFallbackValidation() {
+            const pickupInput = document.getElementById('pickup-address');
+            const deliveryInput = document.getElementById('delivery-address');
+
+            if (pickupInput && !pickupInput.getAttribute('data-google-maps')) {
+                pickupInput.addEventListener('input', () => fallbackValidation(pickupInput));
+                pickupInput.addEventListener('blur', () => fallbackValidation(pickupInput));
+            }
+
+            if (deliveryInput && !deliveryInput.getAttribute('data-google-maps')) {
+                deliveryInput.addEventListener('input', () => fallbackValidation(deliveryInput));
+                deliveryInput.addEventListener('blur', () => fallbackValidation(deliveryInput));
+            }
+        }
+
+        // Load Google Maps API
+        function loadGoogleMapsAPI() {
+            if (googleMapsAttempted) return;
+            googleMapsAttempted = true;
+
+            console.log('🗺️ Loading Google Maps Places API...');
+            
+            const script = document.createElement('script');
+            script.async = true;
+            script.defer = true;
+            script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&libraries=places&callback=initGoogleMaps';
+            
+            script.onerror = function() {
+                console.log('❌ Google Maps script failed to load');
+                console.log('🔄 Activating fallback validation...');
+                activateFallbackValidation();
+            };
+
+            // Set global callback
+            window.initGoogleMaps = initGoogleMaps;
+            
+            document.head.appendChild(script);
+
+            // Timeout fallback
+            setTimeout(function() {
+                if (!googleMapsLoaded) {
+                    console.log('⏰ Google Maps timeout - activating fallback');
+                    activateFallbackValidation();
+                }
+            }, 5000);
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Page loaded - attempting Google Maps integration...');
+            loadGoogleMapsAPI();
+            
+            // Always set up fallback after a delay
+            setTimeout(activateFallbackValidation, 6000);
+        });
+    </script>
+</head>
+<body class="font-inter bg-white">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg fixed w-full z-50 top-0">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="flex items-center">
+                            <img src="images/jetzz_logo_clean.png?v=2" alt="Jetzz Logistics" class="h-12 w-auto md:h-14 lg:h-16 logo-img">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="#home" class="text-jet-gray hover:text-jet-blue px-3 py-2 text-sm font-medium transition-colors">Home</a>
+                        <a href="#services" class="text-jet-gray hover:text-jet-blue px-3 py-2 text-sm font-medium transition-colors">Services</a>
+                        <a href="#about" class="text-jet-gray hover:text-jet-blue px-3 py-2 text-sm font-medium transition-colors">About</a>
+                        <a href="#contact" class="text-jet-gray hover:text-jet-blue px-3 py-2 text-sm font-medium transition-colors">Contact</a>
+                        <a href="#contact" class="bg-jet-red text-white px-6 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors">Get Quote</a>
+                    </div>
+                </div>
+                
+                <!-- Mobile menu button -->
+                <div class="md:hidden">
+                    <button id="mobile-menu-btn" class="text-jet-gray hover:text-jet-blue">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Navigation -->
+        <div id="mobile-menu" class="md:hidden hidden bg-white border-t">
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <a href="#home" class="block px-3 py-2 text-jet-gray hover:text-jet-blue font-medium">Home</a>
+                <a href="#services" class="block px-3 py-2 text-jet-gray hover:text-jet-blue font-medium">Services</a>
+                <a href="#about" class="block px-3 py-2 text-jet-gray hover:text-jet-blue font-medium">About</a>
+                <a href="#contact" class="block px-3 py-2 text-jet-gray hover:text-jet-blue font-medium">Contact</a>
+                <a href="#contact" class="block mx-3 mt-2 bg-jet-red text-white px-4 py-2 rounded-lg font-medium text-center">Get Quote</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 pt-20 sm:pt-16">
+        <!-- Video Background -->
+        <video autoplay muted loop class="absolute inset-0 w-full h-full object-cover">
+            <source src="images/hero_video.mp4" type="video/mp4">
+            <!-- Fallback image for browsers that don't support video -->
+            <img src="images/hotshot_truck_hero.jpg" alt="Hot shot trucking" class="w-full h-full object-cover">
+        </video>
+        <div class="absolute inset-0 bg-black opacity-50"></div>
+        
+        <div class="relative z-10 text-center text-white max-w-4xl mx-auto px-4 py-8">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-bold mb-6 leading-tight">
+                <span class="text-white block sm:inline" style="color: white !important;">Fast. Reliable.</span> <span class="text-jet-red">Professional.</span>
+            </h1>
+            <p class="text-xl md:text-2xl mb-8 text-gray-200">
+                Specialized hot shot trucking for oversized freight and heavy equipment transportation
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#contact" class="bg-jet-red text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-red-700 transition-all transform hover:scale-105">
+                    <i class="fas fa-calculator mr-2"></i>Get Instant Quote
+                </a>
+                <a href="#services" class="border-2 border-white text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-white hover:text-gray-900 transition-all">
+                    <i class="fas fa-truck mr-2"></i>Our Services
+                </a>
+            </div>
+            
+            <!-- Key Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-jet-red mb-2">24/7</div>
+                    <div class="text-lg">Available Service</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-jet-red mb-2">Same Day</div>
+                    <div class="text-lg">Pickup Available</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-4xl font-bold text-jet-red mb-2">100%</div>
+                    <div class="text-lg">Insured Loads</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="py-20 bg-jet-light">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold text-jet-gray mb-6">Hot Shot Trucking Services</h2>
+                <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                    Specialized expedited freight transportation using smaller trucks and trailers for urgent, time-sensitive shipments
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Service 1 -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                    <div class="h-48 bg-cover bg-center" style="background-image: url('images/logistics_truck.jpg')"></div>
+                    <div class="p-6">
+                        <div class="flex items-center mb-4">
+                            <i class="fas fa-rocket text-jet-red text-2xl mr-3"></i>
+                            <h3 class="text-xl font-bold text-jet-gray">Expedited Delivery</h3>
+                        </div>
+                        <p class="text-gray-600 mb-4">
+                            Same-day and next-day delivery for urgent freight that can't wait for standard LTL shipping
+                        </p>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>Same-day pickup</li>
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>Direct routes</li>
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>Real-time tracking</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Service 2 -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                    <div class="h-48 bg-cover bg-center" style="background-image: url('images/freight_delivery.jpg')"></div>
+                    <div class="p-6">
+                        <div class="flex items-center mb-4">
+                            <i class="fas fa-shield-alt text-jet-red text-2xl mr-3"></i>
+                            <h3 class="text-xl font-bold text-jet-gray">Specialized Transport</h3>
+                        </div>
+                        <p class="text-gray-600 mb-4">
+                            Secure handling of high-value, fragile, or specialized cargo with dedicated equipment
+                        </p>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>Climate controlled</li>
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>Secure handling</li>
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>Custom solutions</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Service 3 -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                    <div class="h-48 bg-cover bg-center" style="background-image: url('images/highway_transport.jpg')"></div>
+                    <div class="p-6">
+                        <div class="flex items-center mb-4">
+                            <i class="fas fa-map-marked-alt text-jet-red text-2xl mr-3"></i>
+                            <h3 class="text-xl font-bold text-jet-gray">Regional Coverage</h3>
+                        </div>
+                        <p class="text-gray-600 mb-4">
+                            Comprehensive coverage across multiple states with flexible pickup and delivery
+                        </p>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>Multi-state coverage</li>
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>Flexible scheduling</li>
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>Remote locations</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Service 4 -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                    <div class="p-6">
+                        <div class="flex items-center mb-4">
+                            <i class="fas fa-clock text-jet-red text-2xl mr-3"></i>
+                            <h3 class="text-xl font-bold text-jet-gray">Emergency Transport</h3>
+                        </div>
+                        <p class="text-gray-600 mb-4">
+                            24/7 emergency freight transportation for critical shipments and urgent deliveries
+                        </p>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>24/7 availability</li>
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>Emergency response</li>
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>Priority handling</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Service 5 -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                    <div class="p-6">
+                        <div class="flex items-center mb-4">
+                            <i class="fas fa-handshake text-jet-red text-2xl mr-3"></i>
+                            <h3 class="text-xl font-bold text-jet-gray">White Glove Service</h3>
+                        </div>
+                        <p class="text-gray-600 mb-4">
+                            Premium handling service with inside delivery, setup, and specialized care
+                        </p>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>Inside delivery</li>
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>Professional setup</li>
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>Premium care</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Service 6 -->
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                    <div class="p-6">
+                        <div class="flex items-center mb-4">
+                            <i class="fas fa-satellite-dish text-jet-red text-2xl mr-3"></i>
+                            <h3 class="text-xl font-bold text-jet-gray">Real-Time Tracking</h3>
+                        </div>
+                        <p class="text-gray-600 mb-4">
+                            Advanced GPS tracking and communication for complete visibility of your shipment
+                        </p>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>GPS tracking</li>
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>Status updates</li>
+                            <li><i class="fas fa-check text-green-500 mr-2"></i>ETA monitoring</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="text-4xl md:text-5xl font-bold text-jet-gray mb-6">Why Choose Jetzz Logistics?</h2>
+                    <p class="text-lg text-gray-600 mb-8">
+                        With years of experience in the hot shot trucking industry, Jetzz Logistics has built a reputation for 
+                        reliability, speed, and professional service. We understand that when your freight is time-sensitive, 
+                        every minute counts.
+                    </p>
+                    
+                    <div class="space-y-6">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 w-12 h-12 bg-jet-red rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-award text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold text-jet-gray mb-2">Proven Experience</h3>
+                                <p class="text-gray-600">Years of successful expedited freight deliveries across multiple industries</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 w-12 h-12 bg-jet-red rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-users text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold text-jet-gray mb-2">Professional Team</h3>
+                                <p class="text-gray-600">Experienced drivers and logistics coordinators committed to excellence</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 w-12 h-12 bg-jet-red rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-cog text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-semibold text-jet-gray mb-2">Modern Equipment</h3>
+                                <p class="text-gray-600">Well-maintained fleet with GPS tracking and communication systems</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="relative">
+                    <img src="images/warehouse_logistics.jpg" alt="Jetzz Logistics warehouse operations" class="rounded-xl shadow-lg w-full h-96 object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent rounded-xl"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-20 bg-jet-gray text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-bold mb-6">Get Your Quote Today</h2>
+                <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+                    Ready to ship? Contact us for fast, reliable hot shot trucking services. 
+                    We're available 24/7 for emergency and expedited shipments.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <!-- Contact Information -->
+                <div>
+                    <h3 class="text-2xl font-bold mb-8">Contact Information</h3>
+                    
+                    <div class="space-y-6">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-jet-red rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-phone text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold">Phone</h4>
+                                <p class="text-gray-300">(555) 123-JETS (5387)</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-jet-red rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-envelope text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold">Email</h4>
+                                <p class="text-gray-300">quotes@jetslogistics.com</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-jet-red rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-clock text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold">Hours</h4>
+                                <p class="text-gray-300">24/7 Emergency Service Available</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-jet-red rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-map-marker-alt text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold">Service Area</h4>
+                                <p class="text-gray-300">Texas, Oklahoma, Arkansas, Louisiana, New Mexico</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Quote Section -->
+                    <div class="mt-12 bg-jet-blue/20 rounded-xl p-6">
+                        <h4 class="text-xl font-bold mb-4">Need a Quick Quote?</h4>
+                        <p class="text-gray-300 mb-4">Call us now for immediate pricing on your expedited shipment</p>
+                        <a href="tel:5551235387" class="inline-flex items-center bg-jet-red text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-700 transition-colors">
+                            <i class="fas fa-phone mr-2"></i>Call Now: (555) 123-JETS
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Quote Form -->
+                <div class="bg-white rounded-xl p-8 text-gray-900">
+                    <h3 class="text-2xl font-bold text-jet-gray mb-6">Request a Quote</h3>
+                    
+                    <form id="quote-form" action="https://formspree.io/f/xblybyvo" method="POST" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+                                <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jet-blue">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                                <input type="text" name="company" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jet-blue">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                <input type="tel" name="phone" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jet-blue">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <input type="email" name="email" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jet-blue">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <i class="fas fa-map-marker-alt text-jet-red mr-1"></i>Pickup Location
+                                </label>
+                                <input type="text" id="pickup-address" name="pickup_location" required 
+                                       placeholder="e.g. 123 Main St, Dallas, TX 75201"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jet-blue">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <i class="fas fa-map-marker-alt text-jet-red mr-1"></i>Delivery Location
+                                </label>
+                                <input type="text" id="delivery-address" name="delivery_location" required 
+                                       placeholder="e.g. 456 Oak Ave, Houston, TX 77001"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jet-blue">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Pickup Date</label>
+                                <input type="date" name="pickup_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jet-blue">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Urgency</label>
+                                <select name="urgency" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jet-blue">
+                                    <option value="">Select urgency</option>
+                                    <option value="same-day">Same Day</option>
+                                    <option value="next-day">Next Day</option>
+                                    <option value="2-3-days">2-3 Days</option>
+                                    <option value="standard">Standard</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Cargo Details</label>
+                            <textarea name="cargo_details" rows="3" placeholder="Describe your cargo (dimensions, weight, special requirements)" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-jet-blue"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="w-full bg-jet-red text-white py-3 px-6 rounded-md font-semibold hover:bg-red-700 transition-colors">
+                            <i class="fas fa-paper-plane mr-2"></i>Request Quote
+                        </button>
+                    </form>
+                    
+                    <!-- Success Message (hidden by default) -->
+                    <div id="form-success" class="hidden mt-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-md">
+                        <div class="flex items-center">
+                            <i class="fas fa-check-circle mr-2 text-green-500"></i>
+                            <span class="font-semibold">Quote Request Sent Successfully!</span>
+                        </div>
+                        <p class="mt-2 text-sm">We'll get back to you within 2 hours with a competitive quote for your hot shot trucking needs.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="md:col-span-2">
+                    <h3 class="text-2xl font-bold mb-4">
+                        <i class="fas fa-truck-fast mr-2 text-jet-red"></i>Jetzz Logistics
+                    </h3>
+                    <p class="text-gray-400 mb-4">
+                        Professional hot shot trucking and expedited freight delivery services. 
+                        Fast, reliable transportation for time-sensitive shipments.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-facebook text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-linkedin text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-twitter text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Services</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li><a href="#services" class="hover:text-white transition-colors">Expedited Delivery</a></li>
+                        <li><a href="#services" class="hover:text-white transition-colors">Specialized Transport</a></li>
+                        <li><a href="#services" class="hover:text-white transition-colors">Emergency Service</a></li>
+                        <li><a href="#services" class="hover:text-white transition-colors">White Glove Service</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Contact</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li>(555) 123-JETZ</li>
+                        <li>quotes@jetzzlogistics.com</li>
+                        <li>24/7 Service Available</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2025 Jetzz Logistics. All rights reserved. Professional hot shot trucking services.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="js/main.js"></script>
+    
+
+</body>
+</html>
